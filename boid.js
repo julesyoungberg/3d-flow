@@ -1,11 +1,11 @@
-class Vehicle {
-  constructor(l, ms, mf) {
+class Boid {
+  constructor(pos, ms, mf) {
     this.r = 3.0
     this.maxSpeed = ms
     this.maxForce = mf
     this.acceleration = createVector()
-    this.velocity = createRandomVector()
-    this.position = createVector(x, y, z)
+    this.velocity = p5.Vector.random2D()
+    this.position = pos.copy()
     this.previousPos = this.position.copy()
   }
 
@@ -80,6 +80,19 @@ class Vehicle {
     return force
   }
 
+  // BOID STEERING BEHAVIOURS
+  steer = desired => {
+    const steer = p5.Vector.sub(desired, this.velocity)
+    return this.limitForce(steer)
+  }
+
+  seek = target => {
+    const desired = p5.Vector.sub(target, this.position)
+    desired.setMag(this.maxSpeed)
+
+    return this.steer(desired)
+  }
+
   separate = (others, callback) => {
     const sum = createVector()
     let count = 0
@@ -87,7 +100,7 @@ class Vehicle {
     others.forEach(other => {
       const d = this.distance(other)
 
-      if (d > 0 && d < this.sepDist) {
+      if (d > 0 && d < 10) {
         const diff = p5.Vector.sub(this.position, other.position)
         diff.normalize()
         sum.add(diff)
@@ -99,9 +112,7 @@ class Vehicle {
 
     if (count > 0) {
       sum.div(count).setMag(this.maxSpeed)
-      return this.steer(sum)
-    } else {
-      return sum
+      this.applyForce(this.steer(sum))
     }
   }
 
