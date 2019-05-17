@@ -1,100 +1,114 @@
-function Vehicle(l, ms, mf) {
-  this.r = 3.0;
-  this.maxSpeed = ms;
-  this.maxForce = mf;
-  const initials = initializeObject(l.x, l.y);
-  this.acc = initials.acc;
-  this.vel = initials.vel;
-  this.pos = initials.pos;
-  this.prev = initials.prev;
+class Vehicle {
+  constructor(l, ms, mf) {
+    this.r = 3.0
+    this.maxSpeed = ms
+    this.maxForce = mf
+    this.acceleration = createVector()
+    this.velocity = createRandomVector()
+    this.position = createVector(x, y, z)
+    this.previousPos = this.position.copy()
+  }
 
-  this.show = () => {
-    const theta = this.vel.heading() + PI/2;
-    fill(127, 100);
-    stroke(0, 10);
-    strokeWeight(1);
-    push();
-    translate(this.pos.x, this.pos.y);
-    rotate(theta);
-    beginShape();
-    vertex(0, -this.r*2);
-    vertex(-this.r, this.r*2);
-    vertex(this.r, this.r*2);
-    endShape(CLOSE);
-    pop();
-  };
+  show = () => {
+    const theta = this.velocity.heading() + PI/2
+    fill(127)
+    stroke(0)
+    strokeWeight(1)
+    push()
+    translate(this.position.x, this.position.y)
+    rotate(theta)
+    beginShape()
+    vertex(0, -this.r*2)
+    vertex(-this.r, this.r*2)
+    vertex(this.r, this.r*2)
+    endShape(CLOSE)
+    pop()
+  }
 
-  this.drawLine = () => {
-    const x = Math.abs(this.pos.x - this.prev.x);
-    const y = Math.abs(this.pos.y - this.prev.y);
+  drawLine = () => {
+    const diff = p5.Vector.sub(this.position, this.previousPos)
 
-    if (x < 50 && y < 50) {
+    if (diff.x < 50 && diff.y < 50) {
       strokeWeight(0.5);
       stroke(100);
-      line(this.prev.x, this.prev.y, this.pos.x, this.pos.y);
+      line(
+        this.previousPos.x, this.previousPos.y,
+        this.position.x, this.position.y
+      );
     }
 
-    this.prev = this.pos.copy();
-  };
+    this.previousPos = this.position.copy();
+  }
 
-  this.borders = () => {
-    this.pos = borders({pos: this.pos, r: this.r});
-  };
-
-  this.follow = flow => {
-    this.applyForce(followFlow({
-      pos: this.pos,
-      vel: this.vel,
-      flow: flow,
-      maxSpeed: this.maxSpeed,
-      maxForce: this.maxForce,
-    }));
-  };
-
-  this.update = () => {
-    const newData = update({
-      vel: this.vel,
-      acc: this.acc,
-      pos: this.pos,
-      prev: this.prev,
-      maxSpeed: this.maxSpeed,
-    });
-  };
-
-  this.applyForce = force => {
-    this.acc = applyForce({acc: this.acc, force});
-  };
-
-  this.run = () => {
+  run = () => {
     this.update();
     this.borders();
     //this.show();
     this.drawLine();
-  };
+  }
 
-  this.seperate = (boids) => {
-    var neighborDist = 20;
-    var steer = createVector(0, 0);
-    var count = 0;
+  follow = flow => {
+    const desired = flow.lookup(this.position)
+    desired.mult(this.maxSpeed)
+    this.applyForce(this.steer(desired))
+  }
 
-    for (var i in boids) {
-      var d = p5.Vector.dist(this.pos, boids[i].pos);
-      if (d > 0 && d < neighborDist) {
-        var diff = p5.Vector.sub(this.pos, boids[i].pos);
-        diff.normalize();
-        diff.div(d);
-        steer.add(diff);
-        count++;
+  // PHYSICS FUNCTIONS
+  update = () => {
+    this.velocity.add(this.acceleration)
+    this.limitVelocity()
+    this.prevPosition = this.position.copy()
+    this.position.add(this.velocity)
+    this.acceleration.mult(0)
+  }
+
+  applyForce = force => {
+    this.acceleration.add(force)
+  }
+
+  distance = other => {
+    return p5.Vector.dist(this.position, other.position)
+  }
+
+  limitVelocity = () => {
+    if (this.maxSpeed) this.velocity.limit(this.maxSpeed)
+    return this.velocity
+  }
+
+  limitForce = force => {
+    if (this.maxForce) force.limit(this.maxForce)
+    return force
+  }
+
+  separate = (others, callback) => {
+    const sum = createVector()
+    let count = 0
+
+    others.forEach(other => {
+      const d = this.distance(other)
+
+      if (d > 0 && d < this.sepDist) {
+        const diff = p5.Vector.sub(this.position, other.position)
+        diff.normalize()
+        sum.add(diff)
+        count++
       }
-    }
+
+      if (callback) callback(d, other)
+    })
 
     if (count > 0) {
-      steer.div(count);
-      steer.setMag(this.maxSpeed);
-      steer.sub(this.vel);
-      steer.limit(this.maxForce);
+      sum.div(count).setMag(this.maxSpeed)
+      return this.steer(sum)
+    } else {
+      return sum
     }
+  }
 
-    this.applyForce(steer);
-  };
+  borders = () => {
+    if (this.position.x < -this.r) this.position.x = width + this.r
+    if (this.position.y < -this.r) this.position.y = height + this.r
+    if (this.position.x > width + this.r) this.position.x = -this.r
+    if (this.position.y > height + this.r) this.position.y = -this.r
+  }
 }
