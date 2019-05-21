@@ -14,54 +14,62 @@ class FlowField {
   createFlowField = () => {
     const zOff = 0.0;
     const radius = this.res / 2 - this.padding - 2;
-    const origin = new Babylon.Vector2(1, 0);
-    const center = new Babylon.Vector2(
-      (this.res - 1) / 2,
-      (this.res - 1) / 2
+    const centerNum = (this.res - 1) / 2;
+    const center = new Babylon.Vector3(
+      centerNum, centerNum, centerNum
     );
 
+    // TODO: create 3 different objects of noise offsets
+    // 1 for each axis of rotation
+    // initialize them differently and increment them differently
     noiseSeed(random(10000));
-    let xOff = 0;
+    let zOff = 0;
 
-    for (var i = 0; i < this.res; i++) {
-      let yOff = 0;
-      this.field[i] = [];
+    for (let k = 0; k < this.res; k++) {
+      let xOff = 0;
 
-      for (var j = 0; j < this.res; j++) {
-        const current = new Babylon.Vector2(i, j);
-        const d = Babylon.Vector2.Distance(center, current);
+      for (var i = 0; i < this.res; i++) {
+        let yOff = 0;
+        this.field[i] = [];
 
-        const noiseVal = noise(xOff, yOff, this.zOff);
-        const theta = map(noiseVal, 0, 1, 0, TWO_PI);
-        const noiseDir = new Babylon.Vector2(
-          Math.cos(theta),
-          Math.sin(theta)
-        );
+        for (var j = 0; j < this.res; j++) {
+          const current = new Babylon.Vector2(i, j);
+          const d = Babylon.Vector2.Distance(center, current);
 
-        if (d > radius) {
-          let amount = d - radius;
-          if (amount > this.padding) amount = this.padding;
-
-          const q = amount / this.padding;
-          const toCenter = center.subtract(current).normalize();
-          // this.field[i][j] = toCenter.scale(q).add(
-          //   desired.scale(1 - q)
-          // ).normalize();
-          const noiseAngle = Babylon.Angle.BetweenTwoPoints(origin, noiseDir);
-          const desiredAngle = Babylon.Angle.BetweenTwoPoints(origin, toCenter);
-          const angle = (q * desiredAngle.radians()) + (1 - q) * noiseAngle.radians();
-          this.field[i][j] = new Babylon.Vector2(
-            Math.cos(angle),
-            Math.sin(angle)
+          const noiseVal = noise(xOff, yOff, this.zOff);
+          const theta = map(noiseVal, 0, 1, 0, TWO_PI);
+          const noiseDir = new Babylon.Vector2(
+            Math.cos(theta),
+            Math.sin(theta)
           );
-        } else {
-          this.field[i][j] = noiseDir;
+
+          if (d > radius) {
+            let amount = d - radius;
+            if (amount > this.padding) amount = this.padding;
+
+            const q = amount / this.padding;
+            const toCenter = center.subtract(current).normalize();
+            this.field[i][j] = toCenter.scale(q).add(
+              noiseDir.scale(1 - q)
+            ).normalize();
+            // const noiseAngle = Babylon.Angle.BetweenTwoPoints(origin, noiseDir);
+            // const desiredAngle = Babylon.Angle.BetweenTwoPoints(origin, toCenter);
+            // const angle = (q * desiredAngle.radians()) + (1 - q) * noiseAngle.radians();
+            // this.field[i][j] = new Babylon.Vector2(
+            //   Math.cos(angle),
+            //   Math.sin(angle)
+            // );
+          } else {
+            this.field[i][j] = noiseDir;
+          }
+
+          yOff += 0.3;
         }
 
-        yOff += 0.3;
+        xOff += 0.3;
       }
 
-      xOff += 0.3;
+      zOff += 0.3;
     }
   };
 

@@ -22,17 +22,17 @@ function setup() {
 
 	if (debug) flow.show();
 
-	for (let i = 0; i < boidCount; i++) {
-		boids.push(new Boid(
-			new Babylon.Vector3(
-				random(0, resolution),
-				random(0, resolution),
-				0
-			),
-			random(.5, 5	),
-			random(0.1, .5)
-		));
-	}
+	// for (let i = 0; i < boidCount; i++) {
+	// 	boids.push(new Boid(
+	// 		new Babylon.Vector3(
+	// 			random(0, resolution),
+	// 			random(0, resolution),
+	// 			0
+	// 		),
+	// 		random(.5, 5	),
+	// 		random(0.1, .5)
+	// 	));
+	// }
 
 	babylon.engine.runRenderLoop(() => {
 		// if (debug) flow.show();
