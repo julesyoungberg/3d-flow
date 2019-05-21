@@ -1,6 +1,6 @@
 class Boid {
   constructor(pos, ms, mf) {
-    this.r = 3.0
+    this.r = 2.0
     this.maxSpeed = ms
     this.maxForce = mf
     this.acceleration = createVector()
@@ -11,39 +11,25 @@ class Boid {
 
   show = () => {
     const theta = this.velocity.heading() + PI/2
+    const viewPosition = toViewSpace(this.position)
     fill(127)
-    stroke(0)
-    strokeWeight(1)
+    noStroke()
     push()
-    translate(this.position.x, this.position.y)
+    translate(viewPosition.x, viewPosition.y)
     rotate(theta)
-    beginShape()
-    vertex(0, -this.r*2)
-    vertex(-this.r, this.r*2)
-    vertex(this.r, this.r*2)
-    endShape(CLOSE)
+    sphere(this.r)
     pop()
   }
 
   drawLine = () => {
     const diff = p5.Vector.sub(this.position, this.previousPos)
-
-    if (diff.x < 50 && diff.y < 50) {
-      strokeWeight(0.5);
-      stroke(100);
-      line(
-        this.previousPos.x, this.previousPos.y,
-        this.position.x, this.position.y
-      );
-    }
-
     this.previousPos = this.position.copy();
   }
 
   run = () => {
     this.update();
     this.borders();
-    //this.show();
+    this.show();
     this.drawLine();
   }
 

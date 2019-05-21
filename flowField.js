@@ -1,5 +1,5 @@
 class FlowField {
-  constructor(r) {
+  constructor(r, width, height) {
     this.field = []
     this.r = r
     this.rows = height / r;
@@ -37,16 +37,17 @@ class FlowField {
   }
 
   show = () => {
-    this.field.forEach((col, i) => col.forEach((row, j) => {
-      this.drawVector(row, i*this.r, j*this.r, this.r-2);
+    this.field.forEach((col, i) => col.forEach((item, j) => {
+      const pos = toViewSpace(i * this.r, j * this.r)
+      this.drawVector(item, pos, this.r - 2);
     }));
   }
 
-  drawVector = (v, x, y, scayl) => {
+  drawVector = (v, pos, scayl) => {
     push();
     const arrowsize = 4;
     // Translate to position to render vector
-    translate(x,y);
+    translate(pos.x, pos.y);
     stroke(0,100);
     // Call vector heading function to get direction (note that pointing to the right is a heading of 0) and rotate
     rotate(v.heading());
