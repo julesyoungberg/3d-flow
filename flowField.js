@@ -1,95 +1,133 @@
 class FlowField {
-  constructor(r, width, height) {
-    this.field = []
-    this.r = r
-    this.rows = height / r;
-    this.cols = width / r;
-    this.zoff = 0.0;
-    this.radius = 10;
-    this.border = 5;
-    this.center = createVector(this.cols/2, this.rows/2);
+  constructor(babylon, res, size) {
+    this.babylon = babylon;
+    this.field = [];
+    this.lines = [];
+    this.res = res;
+    this.size = size;
+    this.scale = size / res;
+    this.halfScale = this.scale / 2;
+    this.padding = 5;
+    this.createFlowField();
+  }
+
+  createFlowField = () => {
+    const zOff = 0.0;
+    const radius = this.res / 2 - this.padding - 2;
+    const origin = new Babylon.Vector2(1, 0);
+    const center = new Babylon.Vector2(
+      (this.res - 1) / 2,
+      (this.res - 1) / 2
+    );
 
     noiseSeed(random(10000));
-    let xoff = 0;
+    let xOff = 0;
 
-    for (var i = 0; i < this.cols; i++) {
-      let yoff = 0;
+    for (var i = 0; i < this.res; i++) {
+      let yOff = 0;
       this.field[i] = [];
-      for (var j = 0; j < this.rows; j++) {
-        const current = createVector(i, j);
-        const d = this.center.dist(current);
-        const theta = map(noise(xoff,yoff,this.zoff),0,1,0,TWO_PI);
-        const angle = p5.Vector.fromAngle(theta);
 
-        if (d > this.radius) {
-          let amount = d - this.radius;
-          if (amount > 5) amount = 5;
-          const q = amount / 5;
-          const toCenter = p5.Vector.sub(this.center, current).setMag(1);
-          this.field[i][j] = p5.Vector.add(toCenter.mult(q), angle.mult(1 - q));
+      for (var j = 0; j < this.res; j++) {
+        const current = new Babylon.Vector2(i, j);
+        const d = Babylon.Vector2.Distance(center, current);
+
+        const noiseVal = noise(xOff, yOff, this.zOff);
+        const theta = map(noiseVal, 0, 1, 0, TWO_PI);
+        const noiseDir = new Babylon.Vector2(
+          Math.cos(theta),
+          Math.sin(theta)
+        );
+
+        if (d > radius) {
+          let amount = d - radius;
+          if (amount > this.padding) amount = this.padding;
+
+          const q = amount / this.padding;
+          const toCenter = center.subtract(current).normalize();
+          // this.field[i][j] = toCenter.scale(q).add(
+          //   desired.scale(1 - q)
+          // ).normalize();
+          const noiseAngle = Babylon.Angle.BetweenTwoPoints(origin, noiseDir);
+          const desiredAngle = Babylon.Angle.BetweenTwoPoints(origin, toCenter);
+          const angle = (q * desiredAngle.radians()) + (1 - q) * noiseAngle.radians();
+          this.field[i][j] = new Babylon.Vector2(
+            Math.cos(angle),
+            Math.sin(angle)
+          );
         } else {
-          this.field[i][j] = angle;
+          this.field[i][j] = noiseDir;
         }
-        yoff += 0.1;
+
+        yOff += 0.3;
       }
-      xoff += 0.1;
+
+      xOff += 0.3;
     }
-  }
+  };
 
   show = () => {
-    this.field.forEach((col, i) => col.forEach((item, j) => {
-      const pos = toViewSpace(i * this.r, j * this.r)
-      this.drawVector(item, pos, this.r - 2);
-    }));
-  }
+    this.field.forEach((col, i) => {
+      this.lines[i] = [];
+      col.forEach((item, j) => {
+        const pos = this.toViewSpace(i, j);
+        this.lines[i][j] = this.drawVector(item, pos);
+      })
+    });
+  };
 
-  drawVector = (v, pos, scayl) => {
-    push();
-    const arrowsize = 4;
-    // Translate to position to render vector
-    translate(pos.x, pos.y);
-    stroke(0,100);
-    // Call vector heading function to get direction (note that pointing to the right is a heading of 0) and rotate
-    rotate(v.heading());
-    // Calculate length of vector & scale it to be bigger or smaller if necessary
-    const len = v.mag()*scayl;
-    // Draw three lines to make an arrow (draw pointing up since we've rotate to the proper direction)
-    line(0,0,len,0);
-    //line(len,0,len-arrowsize,+arrowsize/2);
-    //line(len,0,len-arrowsize,-arrowsize/2);
-    pop();
-  }
+  drawVector = (v, pos) => {
+    const vLength = this.scale / 3;
+    // calculate cell corners
+    const x0 = pos.x - this.scale / 2;
+    const x1 = pos.x + this.scale / 2;
+    const y0 = pos.y - this.scale / 2;
+    const y1 = pos.y + this.scale / 2;
+
+    const origin = new Babylon.Vector3(pos.x, pos.y, 0);
+
+    const point = new Babylon.Vector3(
+      map(v.x, -1, 1, x0, x1),
+      map(v.y, -1, 1, y0, y1),
+      0
+    );
+
+    const points = [ origin, point ];
+
+    const colors = [
+      new Babylon.Color4(0, 0, 0, 1),
+      new Babylon.Color4(1, 0, 0, 1)
+    ];
+
+    const line = Babylon.MeshBuilder.CreateLines(
+      `flowFieldVector`,
+      { points, colors },
+      this.babylon.scene
+    );
+
+    this.babylon.addShadowCaster(line);
+
+    return line;
+  };
 
   lookup = (v) => {
-    const col = Math.round(constrain(v.x / this.r, 0, this.cols-1));
-    const row = Math.round(constrain(v.y / this.r, 0, this.rows-1));
-    return this.field[col][row].copy();
-  }
+    const col = Math.round(constrain(v.x, 0, this.res - 1));
+    const row = Math.round(constrain(v.y, 0, this.res - 1));
+    return this.field[col][row].clone();
+  };
 
-  update = () => {
-    let xoff = 0;
-    for (var i = 0; i < this.cols; i++) {
-      let yoff = 0;
-      for (var j = 0; j < this.rows; j++) {
-        const current = createVector(i, j);
-        const d = this.center.dist(current);
-        const theta = map(noise(xoff,yoff,this.zoff),0,1,0,TWO_PI);
-        const angle = p5.Vector.fromAngle(theta);
+  toViewSpace = (x, y) => {
+    return new Babylon.Vector2(
+      this.mapToViewSpace(x),
+      this.mapToViewSpace(y)
+    );
+  };
 
-        if (d > this.radius) {
-          let amount = d - this.radius;
-          if (amount > 5) amount = 5;
-          const q = amount / 5;
-          const toCenter = p5.Vector.sub(this.center, current).setMag(1);
-          this.field[i][j] = p5.Vector.add(toCenter.mult(q), angle.mult(1 - q));
-        } else {
-          this.field[i][j] = angle;
-        }
-        yoff += 0.2;
-      }
-      xoff += 0.2;
-    }
-    // Animate by changing 3rd dimension of noise every frame
-    this.zoff += 0.05;
-  }
+  mapToViewSpace = n => {
+    return map(n, 0, this.res - 1, - this.size / 2, this.size / 2);
+  };
+
+  deleteLines = () => {
+    this.lines.forEach(col => col.forEach(item => item.dispose()));
+    this.lines = [];
+  };
 }

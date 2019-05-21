@@ -1,104 +1,109 @@
 class Boid {
   constructor(pos, ms, mf) {
-    this.r = 2.0
-    this.maxSpeed = ms
-    this.maxForce = mf
-    this.acceleration = createVector()
-    this.velocity = p5.Vector.random2D()
-    this.position = pos.copy()
-    this.previousPos = this.position.copy()
+    this.r = 2.0;
+    this.maxSpeed = .5// ms;
+    this.maxForce = .1// mf;
+    this.acceleration = new Babylon.Vector3(0, 0, 0);
+    this.velocity = new Babylon.Vector3(
+      random(),
+      random(),
+      0
+    );
+    this.position = pos.clone();
+    this.mesh = Babylon.MeshBuilder.CreateSphere(
+      "sphere", { diameter: 0.05 }, scene
+    );
   }
 
-  show = () => {
-    const theta = this.velocity.heading() + PI/2
-    const viewPosition = toViewSpace(this.position)
-    fill(127)
-    noStroke()
-    push()
-    translate(viewPosition.x, viewPosition.y)
-    rotate(theta)
-    sphere(this.r)
-    pop()
+  setMeshPosition = flow => {
+    const viewPosition = flow.toViewSpace(this.position.x, this.position.y);
+    this.mesh.position = new Babylon.Vector3(
+      viewPosition.x,
+      viewPosition.y,
+      0
+    );
   }
 
-  drawLine = () => {
-    const diff = p5.Vector.sub(this.position, this.previousPos)
-    this.previousPos = this.position.copy();
-  }
-
-  run = () => {
+  run = (flow, others) => {
+    this.separate(others);
+    this.follow(flow);
     this.update();
-    this.borders();
-    this.show();
-    this.drawLine();
+    this.setMeshPosition(flow);
   }
 
   follow = flow => {
-    const desired = flow.lookup(this.position)
-    desired.mult(this.maxSpeed)
-    this.applyForce(this.steer(desired))
+    const d = flow.lookup(this.position);
+    const desired = new Babylon.Vector3(d.x, d.y, 0);
+    desired.scaleInPlace(this.maxSpeed);
+    this.applyForce(this.steer(desired));
   }
 
   // PHYSICS FUNCTIONS
   update = () => {
-    this.velocity.add(this.acceleration)
-    this.limitVelocity()
-    this.prevPosition = this.position.copy()
-    this.position.add(this.velocity)
-    this.acceleration.mult(0)
+    this.velocity.addInPlace(this.acceleration);
+    this.limitVelocity();
+    this.position.addInPlace(this.velocity);
+    this.acceleration.scaleInPlace(0);
   }
 
   applyForce = force => {
-    this.acceleration.add(force)
+    this.acceleration.addInPlace(force);
   }
 
   distance = other => {
-    return p5.Vector.dist(this.position, other.position)
+    return this.position.subtract(other.position);
+  }
+
+  limit = (vector, maxMag) => {
+    if (vector.length() > maxMag) {
+      return vector.normalize().scaleInPlace(maxMag);
+    }
+    return vector;
   }
 
   limitVelocity = () => {
-    if (this.maxSpeed) this.velocity.limit(this.maxSpeed)
-    return this.velocity
+    if (this.maxSpeed) this.limit(this.velocity, this.maxSpeed);
+    return this.velocity;
   }
 
   limitForce = force => {
-    if (this.maxForce) force.limit(this.maxForce)
-    return force
+    if (this.maxForce) this.limit(force, this.maxForce);
+    return force;
   }
 
   // BOID STEERING BEHAVIOURS
   steer = desired => {
-    const steer = p5.Vector.sub(desired, this.velocity)
-    return this.limitForce(steer)
+    const steer = desired.subtract(this.velocity);
+    return this.limitForce(steer);
   }
 
   seek = target => {
-    const desired = p5.Vector.sub(target, this.position)
-    desired.setMag(this.maxSpeed)
+    const desired = target.subtract(this.position);
+    desired.setMag(this.maxSpeed);
 
-    return this.steer(desired)
+    return this.steer(desired);
   }
 
   separate = (others, callback) => {
-    const sum = createVector()
-    let count = 0
+    const sum = new Babylon.Vector3(0, 0, 0);
+    let count = 0;
 
     others.forEach(other => {
-      const d = this.distance(other)
+      const d = this.distance(other);
 
       if (d > 0 && d < 10) {
-        const diff = p5.Vector.sub(this.position, other.position)
-        diff.normalize()
-        sum.add(diff)
-        count++
+        const diff = this.position.subtract(other.position);
+        diff.normalize();
+        sum.add(diff);
+        count++;
       }
 
-      if (callback) callback(d, other)
+      if (callback) callback(d, other);
     })
 
     if (count > 0) {
-      sum.div(count).setMag(this.maxSpeed)
-      this.applyForce(this.steer(sum))
+      sum.normalize().scaleInPlace(this.maxSpeed);
+      this.applyForce(this.steer(sum));
     }
   }
 
