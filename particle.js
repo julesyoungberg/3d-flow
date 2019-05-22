@@ -22,12 +22,19 @@ class Particle {
   }
 
   show = () => {
+    const cent = this.noiseSize / 2;
+    const center = createVector(cent, cent, cent);
+    const distToCenter = p5.Vector.dist(center, this.position);
+    const factor = 1 / map(
+      distToCenter, 0, this.noiseSize, 1, 25
+    );
+
     push();
     noStroke();
     translate(this.position.x, this.position.y, this.position.z);
     rotate(this.velocity.heading());
     ambientMaterial(255);
-    box(this.size);
+    box(this.size * factor);
     pop();
   }
 
