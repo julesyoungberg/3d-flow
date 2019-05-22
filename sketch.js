@@ -1,10 +1,11 @@
-let debug = true;
+// TODO: Get params from the following example
+// https://codepen.io/EastingAndNorthing/pen/QpYWQq?editors=0010
 
 let cam;
 let particles = [];
 
 const size = 50;
-const particleCount = 4000;
+const particleCount = 3000;
 const cent = size / 2;
 
 function setup() {

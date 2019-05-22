@@ -25,7 +25,7 @@ class Particle {
   }
 
   followFlow = () => {
-    const noiseScale = 0.01;
+    const noiseScale = 0.03;
     const p = p5.Vector.mult(this.position, noiseScale);
     const sample = noise(p.x, p.y, p.z) * PI * 2;
 
