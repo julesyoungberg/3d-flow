@@ -1,26 +1,37 @@
-const params = {
-	size: 22,
-	noiseScale: 0.10,
-	noiseSpeed: 0.009,
-	noiseStrength: 0.08,
-	noiseFreeze: false,
-	particleCount: 3000,
-	particleSize: 0.22,
-	particleSpeed: 0.1,
-	particleDrag: 0.9,
-	particleColor: 0x41a5ff, //0x41a5ff, 0xff6728
-	bgColor: 0x000000,
-	particleBlending: THREE.AdditiveBlending
-};
+let debug = true;
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  55, window.innerWidth / window.innerHeight, .1, 1000
-);
-camera.lookAt(scene.position);
-camera.position.set(params.size*2, params.size/2, params.size/2);
+let cam;
+let particles = [];
 
-const renderer = new THREE.WebGLRenderer();
-document.body.appendChild(renderer.domElement);
+const size = 50;
+const particleCount = 4000;
+const cent = size / 2;
 
-const controls = new THREE.OrbitalControls(camera, renderer.domElement)
+function setup() {
+	createCanvas(windowWidth, windowHeight, WEBGL);
+	cam = new Dw.EasyCam(this._renderer, {
+		distance: 80, center: [cent, cent, cent]
+	});
+	cam.zoom(size/2);
+	noiseSeed(random(10000));
+
+	for (let i = 0; i < particleCount; i++) {
+		particles.push(new Particle(
+			createVector(random(0, size), random(0, size), random(0, size))
+		));
+	}
+}
+
+function draw() {
+	background(0);
+	directionalLight(255, 0, 0, 1, 0, .25);
+	directionalLight(0, 255, 0, 0, 1, -.25);
+	directionalLight(0, 0, 255, 0, 0, .25);
+	directionalLight(255, 0, 255, -1, 1, -.25);
+	directionalLight(0, 255, 255, 0, 8, -1);
+	particles.forEach(particle => particle.run(size));
+}
+
+function keyPressed() {
+  if (key == ' ') debug = !debug;
+}
