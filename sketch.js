@@ -1,8 +1,6 @@
 // TODO: Get params from the following example
 // https://codepen.io/EastingAndNorthing/pen/QpYWQq?editors=0010
-
-let cam;
-let particles = [];
+const particles = [];
 
 const size = 50;
 const particleCount = 3000;
@@ -10,7 +8,7 @@ const cent = size / 2;
 
 function setup() {
 	createCanvas(windowWidth, windowHeight, WEBGL);
-	cam = new Dw.EasyCam(this._renderer, {
+	const cam = new Dw.EasyCam(this._renderer, {
 		distance: 80, center: [cent, cent, cent]
 	});
 	cam.zoom(size/2);
