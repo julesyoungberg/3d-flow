@@ -76,29 +76,9 @@ class Particle {
     this.acceleration.setMag(0);
   }
 
-  applyForce = force => {
-    this.acceleration.add(force);
-  }
-
-  limit = (vector, maxMag) => {
-    if (vector.mag() > maxMag) {
-      return vector.normalize().mult(maxMag);
-    }
-    return vector;
-  }
-
   limitVelocity = () => {
-    if (this.speed) this.limit(this.velocity, this.speed);
-    return this.velocity;
-  }
-
-  limitForce = force => {
-    if (this.maxForce) this.limit(force, this.maxForce);
-    return force;
-  }
-
-  steer = desired => {
-    const steer = p5.Vector.sub(desired, this.velocity);
-    return this.limitForce(steer);
+    if (this.velocity.mag() > this.speed) {
+      this.velocity.setMag(this.speed);
+    }
   }
 }

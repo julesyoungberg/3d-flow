@@ -5,11 +5,9 @@ const params = {
 	particleSpeed: 0.7,
 	particleDrag: 0.9,
 	bgColor: "#000000",
-	// particleBlending: THREE.AdditiveBlending,
 	noiseScale: 0.03,
 	noiseSpeed: 0.009,
 	noiseStrength: 0.08,
-	noiseFreeze: false,
 	noiseOffset: Math.random()*100,
 	rotation: 0.013,
 };
@@ -27,7 +25,7 @@ const particleConfig = () => ({
 
 const cent = params.size / 2;
 const particles = [];
-let cam, rotation = 0;
+let cam, rotation = 0, paused = false;
 
 function setup() {
 	createCanvas(windowWidth, windowHeight, WEBGL);
@@ -49,6 +47,8 @@ function setup() {
 }
 
 function draw() {
+	if (paused) return;
+	
 	background(255);
 	directionalLight(255, 0, 0, 1, 0, .25);
 	directionalLight(0, 255, 0, 0, 1, -.25);
@@ -61,4 +61,8 @@ function draw() {
 	cam.rotateX(params.rotation);
 	cam.rotateY(params.rotation * 0.7);
 	cam.rotateZ(params.rotation * 0.3);
+}
+
+function keyPressed() {
+	if (key == " ") paused = !paused;
 }
