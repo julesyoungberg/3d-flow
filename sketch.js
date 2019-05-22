@@ -3,14 +3,14 @@ const particles = [];
 
 const params = {
 	size: 50,
-	particleCount: 5000,
+	particleCount: 4000,
 	particleSize: 0.4,
 	particleSpeed: 0.5,
 	particleDrag: 0.9,
 	bgColor: "#000000",
 	// particleBlending: THREE.AdditiveBlending,
 	noiseScale: 0.03,
-	noiseSpeed: 0,//0.009,
+	noiseSpeed: 0.009,
 	noiseStrength: 0.08,
 	noiseFreeze: false,
 	noiseOffset: Math.random()*100,
