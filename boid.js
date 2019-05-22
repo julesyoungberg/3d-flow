@@ -1,7 +1,7 @@
 class Boid {
   constructor(pos, ms, mf) {
-    this.r = 2.0;
-    this.maxSpeed = .5// ms;
+    this.r = 5.0;
+    this.maxSpeed = .2// ms;
     this.maxForce = .1// mf;
     this.acceleration = new Babylon.Vector3(0, 0, 0);
     this.velocity = new Babylon.Vector3(
@@ -11,21 +11,25 @@ class Boid {
     );
     this.position = pos.clone();
     this.mesh = Babylon.MeshBuilder.CreateSphere(
-      "sphere", { diameter: 0.05 }, scene
+      "sphere", { diameter: 0.03 }, scene
     );
   }
 
   setMeshPosition = flow => {
-    const viewPosition = flow.toViewSpace(this.position.x, this.position.y);
+    const viewPosition = flow.toViewSpace(
+      this.position.x,
+      this.position.y,
+      this.position.z
+    );
     this.mesh.position = new Babylon.Vector3(
       viewPosition.x,
       viewPosition.y,
-      0
+      viewPosition.z
     );
   }
 
   run = (flow, others) => {
-    this.separate(others);
+    // this.separate(others);
     this.follow(flow);
     this.update();
     this.setMeshPosition(flow);
@@ -33,9 +37,18 @@ class Boid {
 
   follow = flow => {
     const d = flow.lookup(this.position);
-    const desired = new Babylon.Vector3(d.x, d.y, 0);
-    desired.scaleInPlace(this.maxSpeed);
-    this.applyForce(this.steer(desired));
+    if (d) {
+      const desired = new Babylon.Vector3(d.x, d.y, 0);
+      desired.scaleInPlace(this.maxSpeed);
+      this.applyForce(this.steer(desired));
+    } else {
+      const direction = this.velocity.clone().normalize();
+      const toCenter = flow.center.subtract(this.position).normalize();
+      const reflectionFactor = 2 * Babylon.Vector3.Dot(direction, toCenter);
+      const reflection = direction.subtract(toCenter.scale(reflectionFactor));
+      const desired = reflection.scale(0.6).add(toCenter.scale(0.4));
+      this.applyForce(this.steer(desired));
+    }
   }
 
   // PHYSICS FUNCTIONS
@@ -79,7 +92,7 @@ class Boid {
 
   seek = target => {
     const desired = target.subtract(this.position);
-    desired.setMag(this.maxSpeed);
+    desired.normalize().scaleInPlace(this.maxSpeed * .2);
 
     return this.steer(desired);
   }
@@ -103,7 +116,7 @@ class Boid {
 
     if (count > 0) {
       sum.normalize().scaleInPlace(this.maxSpeed);
-      this.applyForce(this.steer(sum));
+      this.applyForce(this.steer(sum).scale(5));
     }
   }
 
