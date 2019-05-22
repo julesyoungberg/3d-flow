@@ -1,6 +1,5 @@
 class FlowField {
-  constructor(babylon, res, size) {
-    this.babylon = babylon;
+  constructor(res, size) {
     this.field = [];
     this.lines = [];
     this.res = res;
@@ -9,7 +8,7 @@ class FlowField {
     this.halfScale = this.scale / 2;
     this.padding = 5;
     const centerNum = (this.res - 1) / 2;
-    this.center = new Babylon.Vector3(
+    this.center = createVector(
       centerNum, centerNum, centerNum
     );
     this.createFlowField();
@@ -44,8 +43,8 @@ class FlowField {
         this.field[k][i] = [];
 
         for (var j = 0; j < this.res; j++) {
-          const current = new Babylon.Vector3(i, j, k);
-          const d = Babylon.Vector3.Distance(this.center, current);
+          const current = createVector(i, j, k);
+          const d = this.center.dist(current);
 
           if (d <= radius) {
             const values = [];
@@ -55,7 +54,7 @@ class FlowField {
               const val = map(noiseVal, 0, 1, -1, 1);
               values.push(val);
             });
-            const noiseDir = new Babylon.Vector3(
+            const noiseDir = createVector(
               values[0],
               values[1],
               values[2]
@@ -107,7 +106,7 @@ class FlowField {
       layer.forEach((col, i) => {
         this.lines[k][i] = [];
         col.forEach((item, j) => {
-          const pos = this.toViewSpace(i, j, k);
+          const pos = createVector(i, j, k);
           this.lines[k][i][j] = this.drawVector(item, pos);
         })
       });
@@ -115,39 +114,21 @@ class FlowField {
   };
 
   drawVector = (v, pos) => {
-    const vLength = this.scale / 3;
-    // calculate cell corners
-    const x0 = pos.x - this.halfScale;
-    const x1 = pos.x + this.halfScale;
-    const y0 = pos.y - this.halfScale;
-    const y1 = pos.y + this.halfScale;
-    const z0 = pos.z - this.halfScale;
-    const z1 = pos.z + this.halfScale;
-
-    const origin = pos;
-
-    const point = new Babylon.Vector3(
-      map(v.x, -1, 1, x0, x1),
-      map(v.y, -1, 1, y0, y1),
-      map(v.z, -1, 1, z0, z1)
-    );
-
-    const points = [ origin, point ];
-
-    const colors = [
-      new Babylon.Color4(0, 0, 0, 1),
-      new Babylon.Color4(1, 0, 0, 1)
-    ];
-
-    const line = Babylon.MeshBuilder.CreateLines(
-      `flowFieldVector`,
-      { points, colors },
-      this.babylon.scene
-    );
-
-    this.babylon.addShadowCaster(line);
-
-    return line;
+    push();
+    const arrowsize = 4;
+    // Translate to position to render vector
+    translate(pos.x, pos.y, pos.z);
+    normalMaterial();
+    // Call vector heading function to get direction (note that pointing to the right is a heading of 0) and rotate
+    rotate(v.heading());
+    // // Calculate length of vector & scale it to be bigger or smaller if necessary
+    // const len = v.mag()*scayl;
+    // // Draw three lines to make an arrow (draw pointing up since we've rotate to the proper direction)
+    // line(0,0,len,0);
+    // line(len,0,len-arrowsize,+arrowsize/2);
+    // line(len,0,len-arrowsize,-arrowsize/2);
+    cone(this.halfScale / 2, this.halfScale / 2);
+    pop();
   };
 
   lookup = (v) => {
@@ -161,7 +142,7 @@ class FlowField {
   };
 
   toViewSpace = (x, y, z) => {
-    return new Babylon.Vector3(
+    return createVector(
       this.mapToViewSpace(x),
       this.mapToViewSpace(y),
       this.mapToViewSpace(z)
