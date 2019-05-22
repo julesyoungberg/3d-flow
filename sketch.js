@@ -1,36 +1,62 @@
-// TODO: Get params from the following example
-// https://codepen.io/EastingAndNorthing/pen/QpYWQq?editors=0010
+// TODO: try adding gravitational pull towards center
 const particles = [];
 
-const size = 50;
-const particleCount = 3000;
-const cent = size / 2;
+const params = {
+	size: 50,
+	particleCount: 5000,
+	particleSize: 0.4,
+	particleSpeed: 0.5,
+	particleDrag: 0.9,
+	bgColor: "#000000",
+	// particleBlending: THREE.AdditiveBlending,
+	noiseScale: 0.03,
+	noiseSpeed: 0,//0.009,
+	noiseStrength: 0.08,
+	noiseFreeze: false,
+	noiseOffset: Math.random()*100,
+};
+
+const particleConfig = () => ({
+	size: params.particleSize,
+	speed: params.particleSpeed,
+	drag: params.particleDrag,
+	noiseScale: params.noiseScale,
+	noiseSpeed: params.noiseSpeed,
+	noiseStrength: params.noiseStrength,
+	noiseOffset: params.noiseOffset,
+	noiseSize: params.size,
+});
+
+const cent = params.size / 2;
 
 function setup() {
 	createCanvas(windowWidth, windowHeight, WEBGL);
+
 	const cam = new Dw.EasyCam(this._renderer, {
 		distance: 80, center: [cent, cent, cent]
 	});
-	cam.zoom(size/2);
+	cam.zoom(params.size/3);
+
 	noiseSeed(random(10000));
 
-	for (let i = 0; i < particleCount; i++) {
+	for (let i = 0; i < params.particleCount; i++) {
+		const randPos = () => random(0, params.size);
 		particles.push(new Particle(
-			createVector(random(0, size), random(0, size), random(0, size))
+			createVector(randPos(), randPos(), randPos()),
+			particleConfig()
 		));
 	}
 }
 
 function draw() {
-	background(0);
+	background(255);
 	directionalLight(255, 0, 0, 1, 0, .25);
 	directionalLight(0, 255, 0, 0, 1, -.25);
 	directionalLight(0, 0, 255, 0, 0, .25);
 	directionalLight(255, 0, 255, -1, 1, -.25);
 	directionalLight(0, 255, 255, 0, 8, -1);
-	particles.forEach(particle => particle.run(size));
-}
-
-function keyPressed() {
-  if (key == ' ') debug = !debug;
+	particles.forEach(particle => particle.run());
+	// translate(cent, cent, cent);
+	// normalMaterial();
+	// box(10);
 }
