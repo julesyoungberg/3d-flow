@@ -1,10 +1,23 @@
+const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
 class Particle {
-  constructor(pos, config={ speed: 0.5 }) {
+  constructor(config) {
     this.maxForce = .1;
-    this.acceleration = createVector();
-    this.velocity = createVector();
-    this.position = pos.copy();
+    this.acceleration = new THREE.Vector3(0, 0, 0);
+    this.velocity = new THREE.Vector3(0, 0, 0);
+    this.geometry = new THREE.BoxGeometry(config.size, config.size, config.size);
+
+    const randV = () => Math.random() * config.noiseSize;
+    this.position = new THREE.Vector3(randV(), randV(), randV());
+    this.mesh = null;
     this.configure(config);
+  }
+
+  init(scene) {
+    this.mesh = new THREE.Mesh(this.geometry, material);
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.verticesNeedUpdate = true;
+    scene.add(this.mesh);
   }
 
   configure = ({
@@ -21,42 +34,42 @@ class Particle {
     if (noiseSize) this.noiseSize = noiseSize;
   }
 
-  show = () => {
-    const cent = this.noiseSize / 2;
-    const center = createVector(cent, cent, cent);
-    const distToCenter = p5.Vector.dist(center, this.position);
-    const factor = 1 / map(
-      distToCenter, 0, this.noiseSize, 1, 25
-    );
+  // show = () => {
+  //   const cent = this.noiseSize / 2;
+  //   const center = new THREE.Vector3(cent, cent, cent);
+  //   const distToCenter = p5.Vector.dist(center, this.position);
+  //   const factor = 1 / map(
+  //     distToCenter, 0, this.noiseSize, 1, 25
+  //   );
+  //
+  //   push();
+  //   noStroke();
+  //   translate(this.position.x, this.position.y, this.position.z);
+  //   rotate(this.velocity.heading());
+  //   ambientMaterial(255);
+  //   box(this.size * factor);
+  //   pop();
+  // }
 
-    push();
-    noStroke();
-    translate(this.position.x, this.position.y, this.position.z);
-    rotate(this.velocity.heading());
-    ambientMaterial(255);
-    box(this.size * factor);
-    pop();
-  }
-
-  run = () => {
-    this.followFlow();
+  run = (frameCount) => {
+    this.followFlow(frameCount);
     this.borders();
     this.update();
-    this.show();
+    // this.show();
   }
 
-  followFlow = () => {
-    const p = p5.Vector.mult(this.position, this.noiseScale);
-    const sample = noise(
+  followFlow = (frameCount) => {
+    const p = this.position.clone().multiplyScalar(this.noiseScale);
+    const sample = noise.perlin3(
       p.x,
       p.y,
       p.z + this.noiseOffset + frameCount * this.noiseSpeed
-    ) * PI * 2;
+    ) * Math.PI * 2;
 
-    const euler = createVector(sample, sample, sample);
-    const acc = createVector(1, 1, 1);
-    this.acceleration = rotateVector(acc, euler);
-    this.acceleration.mult(this.noiseStrength);
+    const euler = new THREE.Euler(sample, sample, sample);
+    this.acceleration.set(1, 1, 1);
+    this.acceleration.applyEuler(euler);
+    this.acceleration.multiplyScalar(this.noiseStrength);
   }
 
   borders = () => {
@@ -68,17 +81,30 @@ class Particle {
     if (this.position.z > this.noiseSize) this.position.z = 0;
   };
 
-  // ----- PHYSICS -----
   update = () => {
     this.velocity.add(this.acceleration);
-    this.limitVelocity();
+    this.velocity.clampLength(0, this.speed);
     this.position.add(this.velocity);
-    this.acceleration.setMag(0);
-  }
+    this.acceleration.set(0, 0, 0);
+    this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+    this.scale();
+    this.rotate();
+  };
 
-  limitVelocity = () => {
-    if (this.velocity.mag() > this.speed) {
-      this.velocity.setMag(this.speed);
-    }
-  }
+  scale = () => {
+    const cent = this.noiseSize / 2;
+    const center = new THREE.Vector3(cent, cent, cent);
+    const distToCenter = center.distanceTo(this.position);
+    const factor = 1 / map(
+      distToCenter, 0, this.noiseSize, 1, 25
+    );
+    this.mesh.scale.set(factor, factor, factor);
+  };
+
+  rotate = () => {
+    const dir = this.velocity.clone().normalize();
+    const euler = new THREE.Euler(0, 0, 0);
+    euler.setFromVector3(dir);
+    this.mesh.setRotationFromEuler(euler);
+  };
 }
