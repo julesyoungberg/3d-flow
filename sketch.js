@@ -2,7 +2,7 @@ const record = false;
 
 const params = {
 	size: 50,
-	particleCount: 3000,
+	particleCount: 2000,
 	particleSize: 10,
 	particleSpeed: 0.3,
 	noiseScale: 0.03,
