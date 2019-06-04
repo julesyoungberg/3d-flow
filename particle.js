@@ -7,6 +7,7 @@ class Particle {
     this.configure(config);
   }
 
+  // config function used to update particle object
   configure = ({
     size, speed, drag,
     noiseScale, noiseSpeed, noiseStrength, noiseOffset, noiseSize,
@@ -21,6 +22,8 @@ class Particle {
     if (noiseSize) this.noiseSize = noiseSize;
   }
 
+  // draw the particle as a box whose size depends on the particle's distance
+  // to the center of the flow field
   show = () => {
     const cent = this.noiseSize / 2;
     const center = createVector(cent, cent, cent);
@@ -38,6 +41,7 @@ class Particle {
     pop();
   }
 
+  // function to be called by the draw function in sketch
   run = () => {
     this.followFlow();
     this.borders();
@@ -45,6 +49,7 @@ class Particle {
     this.show();
   }
 
+  // finds a force to apply based on the particle's position in perlin noise
   followFlow = () => {
     const p = p5.Vector.mult(this.position, this.noiseScale);
     const sample = noise(
@@ -59,6 +64,7 @@ class Particle {
     this.acceleration.mult(this.noiseStrength);
   }
 
+  // if the particle exits the flow field, wrap around
   borders = () => {
     if (this.position.x < 0) this.position.x = this.noiseSize;
     if (this.position.y < 0) this.position.y = this.noiseSize;

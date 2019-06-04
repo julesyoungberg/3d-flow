@@ -1,5 +1,6 @@
 const record = false;
 
+// TODO: build ui to control these
 const params = {
 	size: 50,
 	particleCount: 2000,
@@ -12,6 +13,7 @@ const params = {
 	rotation: 0.013,
 };
 
+// retrieve config object for the particle class based on params
 const particleConfig = () => ({
 	size: params.particleSize,
 	speed: params.particleSpeed,
@@ -22,10 +24,13 @@ const particleConfig = () => ({
 	noiseSize: params.size,
 });
 
-const cent = params.size / 2;
+const cent = params.size / 2; // center of flow field
 const particles = [];
+
+// camera movement control
 let cam, rotation = 0, paused = false;
 
+// capturer control
 let capturer, startMillis;
 const duration = 60, fps = 60;
 const maxFrames = duration * fps;
@@ -34,6 +39,7 @@ let frameCount = 0;
 function setup() {
 	createCanvas(windowWidth, windowHeight, WEBGL);
 	frameRate(fps);
+
 	if (record) {
 		capturer = new CCapture({ format: 'webm', framerate: fps, verbose: true });
 		capturer.start();
@@ -46,6 +52,7 @@ function setup() {
 
 	noiseSeed(random(10000));
 
+	// initialize particles
 	for (let i = 0; i < params.particleCount; i++) {
 		const randPos = () => random(0, params.size);
 		particles.push(new Particle(
@@ -56,16 +63,7 @@ function setup() {
 }
 
 function draw() {
-	if (paused) return;
-
-	// end
-	if (frameCount > maxFrames) {
-		noLoop();
-		console.log("finished recording");
-		capturer.stop();
-		capturer.save();
-		return;
-	}
+	if (paused) return; // no draw on pause
 
 	background(255);
 	directionalLight(255, 0, 0, 1, 0, .25);
@@ -84,6 +82,15 @@ function draw() {
 	if (record) {
 		capturer.capture(document.getElementById('defaultCanvas0'));
 		frameCount++;
+
+		// when we have collected the desired number of frames stop drawing
+		if (frameCount > maxFrames) {
+			noLoop();
+			console.log("finished recording");
+			capturer.stop();
+			capturer.save();
+			return;
+		}
 	}
 }
 
